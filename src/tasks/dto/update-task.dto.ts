@@ -1,10 +1,9 @@
-import { IsString } from 'class-validator';
-import { UpdateDateColumn } from 'typeorm';
+import { IsOptional, IsString } from 'class-validator';
 
 export class UpdateTaskDto {
   @IsString()
   text: string;
 
-  @UpdateDateColumn()
+  @IsOptional()
   updatedAt: Date;
 }
