@@ -1,82 +1,83 @@
 import {
   Injectable,
-  // BadRequestException,
-  // NotFoundException,
-  // Body,
-  // Param,
+  BadRequestException,
+  NotFoundException,
+  Body,
 } from '@nestjs/common';
 
 import { DatabaseService } from 'src/database/database.service';
-// import { PostTaskDto } from './dto/post-task.dto';
-// import { UpdateTaskDto } from './dto/update-task.dto';
-// import { isValidObjectId } from 'mongoose';
-// import { ObjectId } from 'mongodb';
-// import { groupTasksByParentId, ITask } from './tasks.helper';
+import { PostTaskDto } from './dto/post-task.dto';
+import { UpdateTaskDto } from './dto/update-task.dto';
+import { isValidObjectId } from 'mongoose';
+// import { ObjectId } from 'bson';
+import { groupTasksByParentId, ITask } from './tasks.helper';
 // import { Prisma } from '@prisma/client';
-// interface ISubTask extends ITask {
-//   _id: string;
-// }
+interface ISubTask extends ITask {
+  id: string;
+}
 
 @Injectable()
 export class TasksService {
   constructor(private readonly prisma: DatabaseService) {}
 
   async getAllTasks() {
-    const result = await this.prisma.task.findMany();
+    const tasks = await this.prisma.tasks.findMany();
+
+    return tasks;
+  }
+
+  async createTask(@Body() postTaskDto: PostTaskDto) {
+    const result = await this.prisma.tasks.create({
+      data: postTaskDto,
+    });
     return result;
   }
 
-  // async createTask(@Body() postTaskDto: PostTaskDto) {
-  //   const result = await this.prisma.task.create({
-  //     data: postTaskDto,
-  //   });
-  //   return result;
-  // }
+  async updateTask(id: string, updateTaskDto: UpdateTaskDto) {
+    if (!isValidObjectId(id)) {
+      throw new BadRequestException('Invalid ID format');
+    }
+    // const objectId = new ObjectId(id);
+    const editedTask = await this.prisma.tasks.findUnique({
+      where: { id },
+    });
+    if (!editedTask) {
+      throw new NotFoundException('Task not found');
+    }
 
-  // async updateTask(
-  //   @Param(':id') id: string,
-  //   @Body() updateTaskDto: UpdateTaskDto,
-  // ) {
-  //   if (!isValidObjectId(id)) {
-  //     throw new BadRequestException('Invalid ID format');
-  //   }
-  //   const objectId = new ObjectId(id);
-  //   const editedTask = await this.taskRepository.update(
-  //     { _id: objectId },
-  //     updateTaskDto,
-  //   );
-  //   if (editedTask.affected === 0) {
-  //     throw new NotFoundException('Task not found');
-  //   }
+    const updatedTask = await this.prisma.tasks.update({
+      where: { id },
+      data: updateTaskDto,
+    });
+    return updatedTask;
+  }
 
-  //   const updatedTask = await this.taskRepository.findOneBy({ _id: objectId });
-  //   return updatedTask;
-  // }
+  async removeTask(id: string) {
+    if (!isValidObjectId(id)) {
+      throw new BadRequestException('Invalid ID format');
+    }
 
-  // async removeTask(@Param('id') id: string) {
-  //   if (!isValidObjectId(id)) {
-  //     throw new BadRequestException('Invalid ID format');
-  //   }
-  //   const tasksToDel = [];
+    const allTasks = await this.prisma.tasks.findMany();
 
-  //   const allTasks = await this.taskRepository.find();
-  //   const taskMap = groupTasksByParentId(allTasks);
+    const taskToDelete = allTasks.find((task) => task.id === id);
+    if (!taskToDelete) {
+      throw new NotFoundException('Task not found');
+    }
+    const taskMap = groupTasksByParentId(allTasks);
 
-  //   const deleteTaskChain = (id: string) => {
-  //     if (taskMap[id]) {
-  //       taskMap[id].forEach((subtask: ISubTask) => {
-  //         deleteTaskChain(subtask._id);
-  //       });
-  //     }
-  //     tasksToDel.push(new ObjectId(id));
-  //   };
-  //   deleteTaskChain(id);
+    const deleteTaskChain = async (id: string) => {
+      if (taskMap[id]) {
+        taskMap[id].forEach((subtask: ISubTask) => {
+          deleteTaskChain(subtask.id);
+        });
+      }
+      const result = await this.prisma.tasks.delete({
+        where: { id: id },
+      });
 
-  //   const result = await this.taskRepository.delete(tasksToDel);
+      return result;
+    };
 
-  //   if (!result.raw[0].deletedCount) {
-  //     throw new NotFoundException('Task not found');
-  //   }
-  //   return result;
-  // }
+    return deleteTaskChain(id);
+  }
 }

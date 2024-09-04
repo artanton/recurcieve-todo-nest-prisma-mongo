@@ -4,7 +4,6 @@
 // Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -14,13 +13,12 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Task {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+model Tasks {
+  id        String    @id @default(auto()) @map("_id") @db.ObjectId
   text      String
   date      String
-  sublevel  Int
+  subLevel  Int
   parentId  String
-  createdAt DateTime @default(now())
-  updaredAt DateTime @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime @updatedAt
 }
-
