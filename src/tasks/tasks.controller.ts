@@ -13,7 +13,7 @@ import { PostTaskDto } from './dto/post-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
 // import { Prisma } from '@prisma/client';
 
-@Controller('tasks')
+@Controller('/tasks')
 export class TasksController {
   constructor(private readonly taskService: TasksService) {}
 
