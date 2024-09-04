@@ -15,3 +15,21 @@ export const groupTasksByParentId = (tasks: ITask[]) => {
   });
   return taskMap;
 };
+
+export function transformIdToUnderscoreId<T extends { id: string }>(
+  data: T | T[],
+): (Omit<T, 'id'> & { _id: string }) | (Omit<T, 'id'> & { _id: string })[] {
+  if (Array.isArray(data)) {
+    return data.map((item) => ({
+      ...item,
+      _id: item.id,
+      id: undefined,
+    }));
+  } else {
+    return {
+      ...data,
+      _id: data.id,
+      id: undefined,
+    };
+  }
+}

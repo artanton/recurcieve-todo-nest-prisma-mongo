@@ -10,7 +10,11 @@ import { PostTaskDto } from './dto/post-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
 import { isValidObjectId } from 'mongoose';
 // import { ObjectId } from 'bson';
-import { groupTasksByParentId, ITask } from './tasks.helper';
+import {
+  groupTasksByParentId,
+  ITask,
+  transformIdToUnderscoreId,
+} from './tasks.helper';
 // import { Prisma } from '@prisma/client';
 interface ISubTask extends ITask {
   id: string;
@@ -21,15 +25,17 @@ export class TasksService {
   constructor(private readonly prisma: DatabaseService) {}
 
   async getAllTasks() {
-    const tasks = await this.prisma.tasks.findMany();
+    const tasks = transformIdToUnderscoreId(await this.prisma.tasks.findMany());
 
     return tasks;
   }
 
   async createTask(@Body() postTaskDto: PostTaskDto) {
-    const result = await this.prisma.tasks.create({
-      data: postTaskDto,
-    });
+    const result = transformIdToUnderscoreId(
+      await this.prisma.tasks.create({
+        data: postTaskDto,
+      }),
+    );
     return result;
   }
 
@@ -45,10 +51,12 @@ export class TasksService {
       throw new NotFoundException('Task not found');
     }
 
-    const updatedTask = await this.prisma.tasks.update({
-      where: { id },
-      data: updateTaskDto,
-    });
+    const updatedTask = transformIdToUnderscoreId(
+      await this.prisma.tasks.update({
+        where: { id },
+        data: updateTaskDto,
+      }),
+    );
     return updatedTask;
   }
 
@@ -71,9 +79,11 @@ export class TasksService {
           deleteTaskChain(subtask.id);
         });
       }
-      const result = await this.prisma.tasks.delete({
-        where: { id: id },
-      });
+      const result = transformIdToUnderscoreId(
+        await this.prisma.tasks.delete({
+          where: { id: id },
+        }),
+      );
 
       return result;
     };
